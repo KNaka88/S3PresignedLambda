@@ -1,0 +1,92 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "An AWS Serverless Application.",
+  "Parameters": {
+    "BucketName": {
+        "Type": "String",
+        "Description": "S3 Bucket name to store the file."
+    }
+  },
+  "Resources": {
+    "S3Bucket": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+            "BucketName": { "Ref" : "BucketName" },
+            "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                    { "ServerSideEncryptionByDefault": { "SSEAlgorithm" : "AES256" } }
+                ]
+            },
+            "CorsConfiguration": {
+                "CorsRules": [
+                    { 
+                        "AllowedMethods" : ["GET", "DELETE", "PUT", "POST"],
+                        "AllowedOrigins": ["*"],
+                        "ExposedHeaders": ["Etag"]
+                    }
+                ]
+            }
+        },
+        "DeletionPolicy": "Delete"
+    },
+    "S3AccessForLambda": {
+      "Type": "AWS::IAM::Role",
+      "Description": "IAM Role for Lambda StartMultipartUpload",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ "Effect": "Allow", "Principal": {"Service": ["lambda.amazonaws.com"]}, "Action": ["sts:AssumeRole"] }]
+        },
+        "RoleName": "StartMultipartUploadRole",
+        "ManagedPolicyArns": [
+            "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        ]
+      }
+    },
+    "StartMultipartUpload": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": ["S3Bucket", "S3AccessForLambda"],
+      "Properties": {
+        "Handler": "S3PresignedLambda::S3PresignedLambda.Functions::StartMultipartUpload",
+        "Runtime": "dotnetcore3.1",
+        "Environment": {
+            "Variables" : { 
+                "REGION": { "Fn::Sub": "${AWS::Region}"},
+                "BUCKET_NAME": { "Ref" : "BucketName" }
+            }
+        },
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": { 
+          "Fn::GetAtt": ["S3AccessForLambda", "Arn"]
+        },
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/StartMultipartUpload",
+              "Method": "POST"
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+       "Description": "Name of the S3 bucket with CORS enabled",
+       "Value": { "Ref" : "S3Bucket" }
+    },
+    "ApiURL": {
+      "Description": "API endpoint URL for Prod environment",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+      }
+    }
+  }
+}
