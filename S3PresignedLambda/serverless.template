@@ -30,7 +30,7 @@
         },
         "DeletionPolicy": "Delete"
     },
-    "S3AccessForLambda": {
+    "LambdaRole": {
       "Type": "AWS::IAM::Role",
       "Description": "IAM Role for Lambda StartMultipartUpload",
       "Properties": {
@@ -40,15 +40,16 @@
         },
         "RoleName": "StartMultipartUploadRole",
         "ManagedPolicyArns": [
-            "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+            "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
         ]
       }
     },
     "StartMultipartUpload": {
       "Type": "AWS::Serverless::Function",
-      "DependsOn": ["S3Bucket", "S3AccessForLambda"],
+      "DependsOn": ["S3Bucket", "LambdaRole"],
       "Properties": {
-        "Handler": "S3PresignedLambda::S3PresignedLambda.Functions::StartMultipartUpload",
+        "Handler": "S3Lambdas::S3Lambdas.Functions::StartMultipartUpload",
         "Runtime": "dotnetcore3.1",
         "Environment": {
             "Variables" : { 
@@ -60,7 +61,7 @@
         "MemorySize": 256,
         "Timeout": 30,
         "Role": { 
-          "Fn::GetAtt": ["S3AccessForLambda", "Arn"]
+          "Fn::GetAtt": ["LambdaRole", "Arn"]
         },
         "Policies": [
           "AWSLambdaBasicExecutionRole"

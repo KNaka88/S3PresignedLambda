@@ -8,7 +8,6 @@ namespace S3Lambdas.Models
         [Required]
         public string FileName { get; set; }
         public Guid UserGuid { get; set; }
-
         public string FolderName { get; set; }
     }
 }

@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29926.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S3Lambdas", "S3PresignedLambda\S3Lambdas.csproj", "{FE14892C-8701-44DC-B207-482C7D3ECA0E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S3Lambdas.Tests", "S3PresignedLambda.Tests\S3Lambdas.Tests.csproj", "{B5D53CA0-922E-4E2F-A5F9-402926C5D41D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3Lambdas.Tests", "S3Lambdas.Tests\S3Lambdas.Tests.csproj", "{12FAA569-6D50-4B61-A62D-F0D0AD7666AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{FE14892C-8701-44DC-B207-482C7D3ECA0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE14892C-8701-44DC-B207-482C7D3ECA0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE14892C-8701-44DC-B207-482C7D3ECA0E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B5D53CA0-922E-4E2F-A5F9-402926C5D41D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B5D53CA0-922E-4E2F-A5F9-402926C5D41D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B5D53CA0-922E-4E2F-A5F9-402926C5D41D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B5D53CA0-922E-4E2F-A5F9-402926C5D41D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12FAA569-6D50-4B61-A62D-F0D0AD7666AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12FAA569-6D50-4B61-A62D-F0D0AD7666AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12FAA569-6D50-4B61-A62D-F0D0AD7666AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12FAA569-6D50-4B61-A62D-F0D0AD7666AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
