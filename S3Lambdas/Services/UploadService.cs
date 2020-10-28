@@ -3,8 +3,10 @@ using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
 using S3Lambdas.Models;
+using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -29,7 +31,7 @@ namespace S3Lambdas.Services
             var uploadRequest = new InitiateMultipartUploadRequest
             {
                 BucketName = _environment.GetEnvironmentVariable("BUCKET_NAME"),
-                Key = $"{startMultipartUploadRequest.FileName}",
+                Key = ConstructFileKey(startMultipartUploadRequest),
                 ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256
             };
             var uploadResponse = await _s3.InitiateMultipartUploadAsync(uploadRequest);
@@ -42,6 +44,25 @@ namespace S3Lambdas.Services
             };
 
             return response;
+        }
+
+        private string ConstructFileKey(StartMultipartUploadRequest request)
+        {
+            var sb = new StringBuilder();
+
+            if (string.IsNullOrEmpty(request.FileName))
+            {
+                throw new ArgumentNullException("Filename cannot be empty");
+            }
+
+            if (request.FolderName != null)
+            {
+                sb.Append($"{request.FolderName}/");
+            }
+
+            sb.Append(request.FileName);
+
+            return sb.ToString();
         }
     }
 }
