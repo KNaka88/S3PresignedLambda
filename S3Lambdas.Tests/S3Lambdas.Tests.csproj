@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\S3PresignedLambda\S3Lambdas.csproj" />
+    <ProjectReference Include="..\S3Lambdas\S3Lambdas.csproj" />
   </ItemGroup>
 
 </Project>
