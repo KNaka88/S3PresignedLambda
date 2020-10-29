@@ -4,7 +4,9 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using S3Lambdas.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -23,44 +25,60 @@ namespace S3Lambdas.Services
             _environment = environment;
         }
 
-        public async Task<APIGatewayProxyResponse> StartMultipartUploadAsync(APIGatewayProxyRequest apiRequest, ILambdaContext context)
+        public async Task<InitiateMultipartUploadResponse> StartMultipartUploadAsync(StartMultipartUploadRequest request, ILambdaContext context)
         {
-            context.Logger.LogLine("Get Request\n");
-            var startMultipartUploadRequest = JsonSerializer.Deserialize<StartMultipartUploadRequest>(apiRequest.Body);
-
             var uploadRequest = new InitiateMultipartUploadRequest
             {
                 BucketName = _environment.GetEnvironmentVariable("BUCKET_NAME"),
-                Key = ConstructFileKey(startMultipartUploadRequest),
+                Key = ConstructFileKey(request.FileName, request.FolderName),
                 ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256
             };
-            var uploadResponse = await _s3.InitiateMultipartUploadAsync(uploadRequest);
-
-            var response = new APIGatewayProxyResponse
-            {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = uploadResponse.UploadId,
-                Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
-            };
-
-            return response;
+            
+            return await _s3.InitiateMultipartUploadAsync(uploadRequest);
         }
 
-        private string ConstructFileKey(StartMultipartUploadRequest request)
+        public IList<CreatePresignedUrlResponse> CreatePresignedUrl(PresignedUrlRequest request, ILambdaContext context)
+        {
+            var presignedUrlRequests = request.PartNumbers.Select(partNumber => new GetPreSignedUrlRequest
+            {
+                BucketName = _environment.GetEnvironmentVariable("BUCKET_NAME"),
+                Key = ConstructFileKey(request.FileName, request.FolderName),
+                Verb = HttpVerb.PUT,
+                UploadId = request.UploadId,
+                PartNumber = partNumber,
+                ContentType = request.ContentType,
+                Expires = DateTime.UtcNow.AddMinutes(30),
+            });
+
+            var responseCollection = new BlockingCollection<CreatePresignedUrlResponse>();
+
+            Parallel.ForEach(presignedUrlRequests, (request) =>
+            {
+                responseCollection.Add(new CreatePresignedUrlResponse
+                {
+                    PartNumber = request.PartNumber,
+                    PresignedUrl = _s3.GetPreSignedURL(request)
+                });
+            });
+
+            return responseCollection.OrderBy(x => x.PartNumber).ToList();
+        }
+
+        private string ConstructFileKey(string fileName, string folderName)
         {
             var sb = new StringBuilder();
 
-            if (string.IsNullOrEmpty(request.FileName))
+            if (string.IsNullOrEmpty(fileName))
             {
                 throw new ArgumentNullException("Filename cannot be empty");
             }
 
-            if (request.FolderName != null)
+            if (folderName != null)
             {
-                sb.Append($"{request.FolderName}/");
+                sb.Append($"{folderName}/");
             }
 
-            sb.Append(request.FileName);
+            sb.Append(fileName);
 
             return sb.ToString();
         }

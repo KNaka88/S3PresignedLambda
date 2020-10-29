@@ -76,6 +76,37 @@
           }
         }
       }
+    },
+    "CreatePresignedUrl": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": ["S3Bucket", "LambdaRole"],
+      "Properties": {
+        "Handler": "S3Lambdas::S3Lambdas.Functions::CreatePresignedUrl",
+        "Runtime": "dotnetcore3.1",
+        "Environment": {
+            "Variables" : { 
+                "REGION": { "Fn::Sub": "${AWS::Region}"}
+            }
+        },
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": { 
+          "Fn::GetAtt": ["LambdaRole", "Arn"]
+        },
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/CreatePresignedUrl",
+              "Method": "POST"
+            }
+          }
+        }
+      }
     }
   },
   "Outputs": {
