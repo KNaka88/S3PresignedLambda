@@ -7,6 +7,8 @@ using NUnit.Framework;
 using S3Lambdas.Models;
 using S3Lambdas.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace S3Lambdas.Tests
@@ -27,6 +29,7 @@ namespace S3Lambdas.Tests
             _environment.GetEnvironmentVariable("BUCKET_NAME").Returns(bucketName);
             _s3 = Substitute.For<IAmazonS3>();
             _s3.InitiateMultipartUploadAsync(Arg.Any<InitiateMultipartUploadRequest>()).Returns(new InitiateMultipartUploadResponse { UploadId = "42" });
+            _s3.GetPreSignedURL(Arg.Any<GetPreSignedUrlRequest>()).Returns("presignedUrl.com");
             _uploadService = new UploadService(_s3, _environment);
             _context = new TestLambdaContext();
         }
@@ -77,6 +80,50 @@ namespace S3Lambdas.Tests
                 a.BucketName == bucketName &&
                 a.Key == $"{request.FolderName}/{request.FileName}"
             ));
+        }
+
+        [Test]
+        public void CreatePresignedUrl_should_call_S3_GetPresignedURL()
+        {
+            var request = new PresignedUrlRequest
+            {
+                ContentType = "application/pdf",
+                FileName = "TestFile.pdf",
+                FolderName = "Folder1",
+                PartNumbers = new List<int> { 1, 3, 2, 4, 5 },
+                UploadId = "42"
+            };
+
+            _uploadService.CreatePresignedUrl(request, _context);
+
+            _s3.Received(5).GetPreSignedURL(Arg.Is<GetPreSignedUrlRequest>(p => 
+                p.ContentType == "application/pdf" &&
+                p.Key == $"{request.FolderName}/{request.FileName}" &&
+                p.UploadId == request.UploadId
+            ));
+        }
+
+        [Test]
+        public void CreatePresignedUrl_should_return_list_of_PresignedUrlResponse()
+        {
+            var request = new PresignedUrlRequest
+            {
+                ContentType = "application/pdf",
+                FileName = "TestFile.pdf",
+                FolderName = "Folder1",
+                PartNumbers = new List<int> { 1, 3, 2 },
+                UploadId = "42"
+            };
+
+            var response = _uploadService.CreatePresignedUrl(request, _context);
+
+            var index = 1;
+            foreach (var createPresignedUrlResponse in response)
+            {
+                createPresignedUrlResponse.PartNumber.Should().Be(index);
+                createPresignedUrlResponse.PresignedUrl.Should().Be("presignedUrl.com");
+                index++;
+            }
         }
 
         private StartMultipartUploadRequest PrepareRequest(string fileName, string folderName)
