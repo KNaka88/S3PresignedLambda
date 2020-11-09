@@ -12,7 +12,7 @@
     "framework"     : "netcoreapp3.1",
     "s3-prefix"     : "S3PresignedLambda/",
     "template"      : "serverless.template",
-    "template-parameters" : "\"BucketName\"=\"s3-bucket-for-lambda-oct-2020\"",
+    "template-parameters" : "\"BucketName\"=\"s3-bucket-for-lambda-dev-2020\"",
     "s3-bucket"           : "myrandombucketwow",
     "stack-name"          : "s3Uploader"
 }

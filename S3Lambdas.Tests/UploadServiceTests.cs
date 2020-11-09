@@ -8,7 +8,6 @@ using S3Lambdas.Models;
 using S3Lambdas.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace S3Lambdas.Tests
@@ -124,6 +123,22 @@ namespace S3Lambdas.Tests
                 createPresignedUrlResponse.PresignedUrl.Should().Be("presignedUrl.com");
                 index++;
             }
+        }
+
+        [Test]
+        public async Task CompleteMultiPartUpload_calls_S3_CompleteMultipartUploadAsync()
+        {
+            var request = new CompleteMultipartUploadRequest
+            {
+                BucketName = bucketName,
+                UploadId = "42",
+                Key = "TestFile.pdf",
+                PartETags = new List<PartETag> { new PartETag { ETag = "etag1", PartNumber = 1 }, new PartETag { ETag = "etag2", PartNumber = 2 } }
+            };
+
+            await _uploadService.CompleteMultiPartUploadAsync(request);
+
+            await _s3.Received(1).CompleteMultipartUploadAsync(request);
         }
 
         private StartMultipartUploadRequest PrepareRequest(string fileName, string folderName)

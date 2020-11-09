@@ -5,7 +5,6 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.S3;
 using Microsoft.Extensions.DependencyInjection;
 using S3Lambdas.Services;
-using System.Text.Json;
 using S3Lambdas.Models;
 using System.Collections.Generic;
 using System.Net;
@@ -30,33 +29,70 @@ namespace S3Lambdas
         }
 
         /// <summary>
-        /// A Lambda function to respond to HTTP Get methods from API Gateway
+        /// A Lambda function to initiating the multipart upload.
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns>The API Gateway response.</returns>
+        /// <param name="request">The <see cref="APIGatewayProxyRequest"/>.</param>
+        /// <returns>The <see cref="Task"/> of the <see cref="APIGatewayProxyResponse"/>.</returns>
         public async Task<APIGatewayProxyResponse> StartMultipartUpload(APIGatewayProxyRequest apiRequest, ILambdaContext context)
         {
-            var request = JsonSerializer.Deserialize<StartMultipartUploadRequest>(apiRequest.Body);
+            var request = JsonConverter.Deserialize<StartMultipartUploadRequest>(apiRequest.Body);
             var uploadResponse = await _serviceProvider.GetService<IUploadService>().StartMultipartUploadAsync(request, context);
 
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
                 Body = uploadResponse.UploadId,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                Headers = new Dictionary<string, string> {
+                    { "Content-Type", "application/json" },
+                    { "Access-Control-Allow-Origin", "*" },
+                    { "Access-Control-Allow-Headers", "*" },
+                    { "Access-Control-Allow-Methods", "POST" }
+                }
             };
         }
 
+        /// <summary>
+        /// A Lambda function to create presigned urls. It has to be called after the StartMultipartUpload.
+        /// </summary>
+        /// <param name="request">The <see cref="APIGatewayProxyRequest"/>.</param>
+        /// <returns>The <see cref="APIGatewayProxyResponse"/>.</returns>
         public APIGatewayProxyResponse CreatePresignedUrl(APIGatewayProxyRequest apiRequest, ILambdaContext context)
         {
-            var request = JsonSerializer.Deserialize<PresignedUrlRequest>(apiRequest.Body);
+            var request = JsonConverter.Deserialize<PresignedUrlRequest>(apiRequest.Body);
             var responseList = _serviceProvider.GetService<IUploadService>().CreatePresignedUrl(request, context);
 
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)HttpStatusCode.OK,
-                Body = JsonSerializer.Serialize(responseList),
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                Body = JsonConverter.SerializeWithCamelCase(responseList),
+                Headers = new Dictionary<string, string> {
+                    { "Content-Type", "application/json" },
+                    { "Access-Control-Allow-Origin", "*" },
+                    { "Access-Control-Allow-Headers", "*" },
+                    { "Access-Control-Allow-Methods", "POST" }
+                }
+            };
+        }
+
+        /// <summary>
+        /// A Lambda function to complete multi part upload after file uploading is done.
+        /// </summary>
+        /// <param name="request">The <see cref="APIGatewayProxyRequest"/>.</param>
+        /// <returns>The <see cref="Task"/> of the <see cref="APIGatewayProxyResponse"/>.</returns>
+        public async Task<APIGatewayProxyResponse> CompleteMultiPartUpload(APIGatewayProxyRequest apiRequest, ILambdaContext context)
+        {
+            var request = JsonConverter.Deserialize<CompleteMultipartRequest>(apiRequest.Body);
+            await _serviceProvider.GetService<IUploadService>().CompleteMultiPartUploadAsync(request);
+
+            return new APIGatewayProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.OK,
+                Headers = new Dictionary<string, string> { 
+                    { "Content-Type", "application/json" },
+                    { "Access-Control-Allow-Origin", "*" },
+                    { "Access-Control-Allow-Headers", "*" },
+                    { "Access-Control-Allow-Methods", "POST" }
+                }
             };
         }
 

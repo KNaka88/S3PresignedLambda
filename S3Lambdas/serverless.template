@@ -8,6 +8,14 @@
         "Description": "S3 Bucket name to store the file."
     }
   },
+  "Globals": {
+    "Api": {
+        "Cors": {
+            "AllowOrigin": "'*'",
+            "AllowHeaders": "'*'"
+        }
+    }
+  },
   "Resources": {
     "S3Bucket": {
         "Type": "AWS::S3::Bucket",
@@ -23,7 +31,8 @@
                     { 
                         "AllowedMethods" : ["GET", "DELETE", "PUT", "POST"],
                         "AllowedOrigins": ["*"],
-                        "ExposedHeaders": ["Etag"]
+                        "AllowedHeaders": ["*"],
+                        "ExposedHeaders": ["ETag"]
                     }
                 ]
             }
@@ -85,7 +94,8 @@
         "Runtime": "dotnetcore3.1",
         "Environment": {
             "Variables" : { 
-                "REGION": { "Fn::Sub": "${AWS::Region}"}
+                "REGION": { "Fn::Sub": "${AWS::Region}"},
+                "BUCKET_NAME": { "Ref" : "BucketName" }
             }
         },
         "CodeUri": "",
@@ -102,6 +112,38 @@
             "Type": "Api",
             "Properties": {
               "Path": "/CreatePresignedUrl",
+              "Method": "POST"
+            }
+          }
+        }
+      }
+    },
+     "CompleteMultiPartUpload": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": ["S3Bucket", "LambdaRole"],
+      "Properties": {
+        "Handler": "S3Lambdas::S3Lambdas.Functions::CompleteMultiPartUpload",
+        "Runtime": "dotnetcore3.1",
+        "Environment": {
+            "Variables" : { 
+                "REGION": { "Fn::Sub": "${AWS::Region}"},
+                "BUCKET_NAME": { "Ref" : "BucketName" }
+            }
+        },
+        "CodeUri": "",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": { 
+          "Fn::GetAtt": ["LambdaRole", "Arn"]
+        },
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "Events": {
+          "RootGet": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/CompleteMultiPartUpload",
               "Method": "POST"
             }
           }
